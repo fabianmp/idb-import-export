@@ -9,6 +9,11 @@ interface Database {
   keyPath: string;
   storeName: string;
   entries: number;
+  transformKey: (value: string) => any;
+}
+
+function parseDate(value: string) {
+  return new Date(Date.parse(value));
 }
 
 const databases = ref([
@@ -17,12 +22,14 @@ const databases = ref([
     keyPath: "timestamp",
     storeName: "data",
     entries: 0,
+    transformKey: parseDate,
   },
   <Database>{
     name: "project-time",
     keyPath: "timestamp",
     storeName: "data",
     entries: 0,
+    transformKey: parseDate,
   },
 ]);
 
@@ -47,7 +54,7 @@ function sendDownloadFile(basename: string, data: any) {
   const timestamp = new Date().toISOString();
   const jsonContent = encodeURI(
     "data:application/json;charset=utf-8," + JSON.stringify(data),
-  );
+  ).replaceAll("#", "%23");
   var link = document.createElement("a");
   link.setAttribute("href", jsonContent);
   link.setAttribute("download", `${basename}-${timestamp}.json`);
@@ -79,7 +86,9 @@ async function importDatabase(database: Database) {
     await db.clear(database.storeName);
   }
   for (const entry of importData.value) {
-    await db.add(database.storeName, JSON.parse(JSON.stringify(entry)));
+    const parsed = JSON.parse(JSON.stringify(entry));
+    parsed[database.keyPath] = database.transformKey(parsed[database.keyPath]);
+    await db.add(database.storeName, parsed);
   }
   toast.add(<Toast>{
     title: `Imported ${importData.value.length} entries into ${database.name}`,
