@@ -47,7 +47,7 @@ function sendDownloadFile(basename: string, data: any) {
   const timestamp = new Date().toISOString();
   const jsonContent = encodeURI(
     "data:application/json;charset=utf-8," + JSON.stringify(data),
-  );
+  ).replaceAll("#", "%23");
   var link = document.createElement("a");
   link.setAttribute("href", jsonContent);
   link.setAttribute("download", `${basename}-${timestamp}.json`);
